@@ -23,6 +23,7 @@ import os.path
 from os import path
 from google.colab import userdata
 
+amvera_var = 0
 amvera_var = os.environ["MY_VAR"]
 if amvera_var == 1:
   # Импортировать ключ для авторизации в GigaChat и токен от Telegram бота
