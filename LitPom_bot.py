@@ -18,18 +18,26 @@ from langchain.text_splitter import RecursiveCharacterTextSplitter
 from langchain.embeddings import HuggingFaceEmbeddings
 from langchain.vectorstores.faiss import FAISS
 
+import os
 import os.path
 from os import path
-
 from google.colab import userdata
 
-# Импортировать ключ для авторизации в GigaChat и токен от Telegram бота
-sber = userdata.get('SBER_AUTH')
-bot_token = userdata.get('BOT_TOKEN')
-
-# Импортировать промпты
-r_prompt = userdata.get('RAG_PROMPT')
-c_prompt = userdata.get('CONV_PROMPT')
+amvera_var = os.environ["MY_VAR"]
+if amvera_var == 1:
+  # Импортировать ключ для авторизации в GigaChat и токен от Telegram бота
+  sber = os.environ('SBER_AUTH')
+  bot_token = os.environ('BOT_TOKEN')
+  # Импортировать промпты
+  r_prompt = os.environ('RAG_PROMPT')
+  c_prompt = os.environ('CONV_PROMPT')
+else:
+  # Импортировать ключ для авторизации в GigaChat и токен от Telegram бота
+  sber = userdata.get('SBER_AUTH')
+  bot_token = userdata.get('BOT_TOKEN')
+  # Импортировать промпты
+  r_prompt = userdata.get('RAG_PROMPT')
+  c_prompt = userdata.get('CONV_PROMPT')
 
 ####################################################################################################
 #                                            Инициализация                                         #
@@ -69,12 +77,14 @@ def create_llm_rag(user_id):
                                   model_kwargs=model_kwargs,
                                   encode_kwargs=encode_kwargs)
     # Создать векторное хранилище
-    if path.exists(str(user_id) + ".faiss"):
+    if path.exists(doc_store+'/'+str(user_id) + ".faiss"):
       # Загрузить существующее векторное хранилище пользователя
+      #bot.send_message(user_id, 'Загрузка векторного хранилища')
       vector_store = FAISS.load_local(folder_path=doc_store, embeddings=embedding, index_name=str(user_id),
                         allow_dangerous_deserialization=True )
     else:
       # Создать пустое векторное хранилище
+      #bot.send_message(user_id, 'Создание векторного хранилища')
       texts = ["FAISS is an important library", "LangChain supports FAISS"]
       vector_store = FAISS.from_texts(texts, embedding)
     # Создать ретривер
