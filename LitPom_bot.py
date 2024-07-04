@@ -27,6 +27,10 @@ from google.colab import userdata
 sber = userdata.get('SBER_AUTH')
 bot_token = userdata.get('BOT_TOKEN')
 
+# Импортировать промпты
+r_prompt = userdata.get('RAG_PROMPT')
+c_prompt = userdata.get('CONV_PROMPT')
+
 ####################################################################################################
 #                                            Инициализация                                         #
 ####################################################################################################
@@ -34,37 +38,11 @@ bot_token = userdata.get('BOT_TOKEN')
 user_conversations = {} # Словарь для хранения ConversationBufferMemory каждого пользователя
 user_llm_rag = {} # Словарь для хранения модели и rag каждого пользователя
 
+doc_store = 'data' # Путь для сохранения векторных хранилищ
+
 # Создать промпты
-rag_prompt = ChatPromptTemplate.from_template('''Ответь на вопрос пользователя. \
-Используй при этом только
-информацию из контекста. Если в контексте нет \
-информации для ответа, сообщи об этом пользователю.
-Контекст: {context}
-Вопрос: {input}
-Ответ:'''
-)
-
-conv_prompt_1 = '''
-Ты являешься ученым-энциклопедистом. Твоя задача красочно и подробно отвечать \
-на вопросы пользователя. Используй только проверенную информацию. \
-Если информация получена из сомнительных источников - сообщай об этом. Это важно! \
-\n\nТекущий разговор:\n{history}\nHuman: {input}\nAI:
-'''
-
-conv_prompt_2 = '''
-Ты являешься профессиональным редактором и популяризатором науки и техники. \
-Твоя задача отредактировать текст, введенный пользователем в качестве запроса. \
-Ты можешь дополнять текст не нарушая его смысла и используя только проверенную информацию. \
-Это важно! \
-\n\nТекущий разговор:\n{history}\nHuman: {input}\nAI:
-'''
-
-conv_prompt = '''
-Ты являешься экспертом-универсалом в различных областях науки и техники, экономики и юриспруденции. \
-Твоя задача дополнить текст, введенный пользователем в качестве запроса. \
-Ты можешь дополнять текст используя только проверенную информацию. Это важно! \
-\n\nТекущий разговор:\n{history}\nHuman: {input}\nAI:
-'''
+rag_prompt = ChatPromptTemplate.from_template(r_prompt)
+conv_prompt = c_prompt
 
 # Создать объект бота
 import telebot
@@ -93,7 +71,7 @@ def create_llm_rag(user_id):
     # Создать векторное хранилище
     if path.exists(str(user_id) + ".faiss"):
       # Загрузить существующее векторное хранилище пользователя
-      vector_store = FAISS.load_local(folder_path="", embeddings=embedding, index_name=str(user_id),
+      vector_store = FAISS.load_local(folder_path=doc_store, embeddings=embedding, index_name=str(user_id),
                         allow_dangerous_deserialization=True )
     else:
       # Создать пустое векторное хранилище
@@ -213,7 +191,7 @@ def handle_doc_message(message):
     if r > 0:
       bot.send_message(user_id, "Документ прочитан ("+ str(r) +')')
       # Сохранить дополненное векторное хранилище
-      vdb.save_local('', str(user_id))
+      vdb.save_local(doc_store, str(user_id))
     else:
       bot.send_message(user_id, "Не могу прочитать документ, вероятно не понятный формат.")
 
@@ -246,10 +224,10 @@ def handle_text_message(message):
     answer = resp1['answer']
     bot.send_message(user_id, answer)
     # (LLM)
-    q2 = answer
-    resp2 = conversation.predict(input=q2)
-    bot.send_message(user_id, 'LLM:')
-    bot.send_message(user_id, conversation.memory.chat_memory.messages[-1].content)
+    # q2 = answer
+    # resp2 = conversation.predict(input=q2)
+    # bot.send_message(user_id, 'LLM:')
+    # bot.send_message(user_id, conversation.memory.chat_memory.messages[-1].content)
 
     # ........
 
