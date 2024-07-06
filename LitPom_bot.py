@@ -134,7 +134,7 @@ def create_conversation_chain(user_id, llm):
 def learn_document(doc_file,vector_store):
     # ЗАГРУЗКА И НАРЕЗКА ТЕКСТА DOCX
     text_splitter = RecursiveCharacterTextSplitter(chunk_size=1024,
-                                              chunk_overlap=512)
+                                              chunk_overlap=128)
     # Определить расшиение файла - docx, pdf или fb2
     file_ext = doc_file[doc_file.rfind(".") + 1:]
     # Использовать соответствующий загрузчик
