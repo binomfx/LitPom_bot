@@ -165,6 +165,24 @@ def learn_document(doc_file,vector_store):
 #                                  Функции обработки сообщений                                     #
 ####################################################################################################
 
+# `/start` - функция, обрабатывающая команду
+#############################################
+@bot.message_handler(commands=['start'])
+def start(message: types.Message):
+    user_id = message.chat.id
+
+    # Проверка словарей для данного пользователя
+    if user_id not in user_conversations:
+        user_conversations[user_id] = ConversationBufferMemory()
+
+    if user_id not in user_llm_rag:
+        user_llm_rag[user_id] = create_llm_rag(user_id)
+
+    vdb, embedding_retriever, llm, rag_chain, conversation = user_llm_rag[user_id]
+    conversation.memory = user_conversations[user_id]
+
+    bot.send_message(message.chat.id, 'Готов к работе')
+
 # Функция, обрабатывающая неправильные форматы ввода
 ####################################################
 @bot.message_handler(content_types=['audio',
@@ -250,27 +268,6 @@ def handle_text_message(message):
     # ........
 
     sleep(2)
-
-# `/start` - функция, обрабатывающая команду
-#############################################
-@bot.message_handler(commands=['start'])
-def start(message: types.Message):
-    user_id = message.chat.id
-
-    # Проверка словарей для данного пользователя
-    if user_id not in user_conversations:
-        user_conversations[user_id] = ConversationBufferMemory()
-
-    if user_id not in user_llm_rag:
-        user_llm_rag[user_id] = create_llm_rag(user_id)
-
-    vdb, embedding_retriever, llm, rag_chain, conversation = user_llm_rag[user_id]
-    conversation.memory = user_conversations[user_id]
-
-    bot.send_message(message.chat.id, 'Готов к работе')
-
-
-
 
 ####################################################################################################
 #                                      Запуск бота                                                 #
