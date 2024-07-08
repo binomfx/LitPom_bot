@@ -186,7 +186,7 @@ def start(message: types.Message):
 # `/help` - функция, обрабатывающая команду
 #############################################
 @bot.message_handler(commands=['help'])
-def start(message: types.Message):
+def help(message: types.Message):
     user_id = message.chat.id
 
     bot.send_message(message.chat.id, 'Я - бот-помощник в работе с текстами. Вы можете отправить мне файлы в форматах .doc .pdf .fb2, я их обработаю, загружу в векторную базу данных и Вы сможете задавать мне вопросы по этим текставм.')
