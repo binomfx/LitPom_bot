@@ -24,7 +24,7 @@ from os import path
 from google.colab import userdata
 
 amvera_var = 0
-amvera_var = os.environ["MY_VAR"]
+#amvera_var = os.environ["MY_VAR"]
 if amvera_var == 1:
   # Импортировать ключ для авторизации в GigaChat и токен от Telegram бота
   sber = os.environ('SBER_AUTH')
@@ -50,12 +50,19 @@ user_llm_rag = {} # Словарь для хранения модели и rag �
 doc_store = 'data' # Путь для сохранения векторных хранилищ
 
 # Создать промпты
-rag_prompt = ChatPromptTemplate.from_template(r_prompt)
+rag_prompt = ChatPromptTemplate.from_template('''Ответь на вопрос пользователя. \
+Используй при этом только информацию из контекста. Это Важно! Если в контексте нет \
+информации для ответа, сообщи об этом пользователю фразой - в контексте нет необходимой информации.
+Контекст: {context}
+Вопрос: {input}
+Ответ:'''
+)
 conv_prompt = c_prompt
 
 # Создать объект бота
 import telebot
 from time import sleep
+from telebot import types
 
 bot = telebot.TeleBot(bot_token)
 
@@ -78,14 +85,14 @@ def create_llm_rag(user_id):
                                   model_kwargs=model_kwargs,
                                   encode_kwargs=encode_kwargs)
     # Создать векторное хранилище
-    if path.exists(doc_store+'/'+str(user_id) + ".faiss"):
+    if path.exists(doc_store + '/' + str(user_id) + ".faiss"):
       # Загрузить существующее векторное хранилище пользователя
-      #bot.send_message(user_id, 'Загрузка векторного хранилища')
+      bot.send_message(user_id, 'Загрузка векторного хранилища')
       vector_store = FAISS.load_local(folder_path=doc_store, embeddings=embedding, index_name=str(user_id),
                         allow_dangerous_deserialization=True )
     else:
       # Создать пустое векторное хранилище
-      #bot.send_message(user_id, 'Создание векторного хранилища')
+      bot.send_message(user_id, 'Создание векторного хранилища')
       texts = ["FAISS is an important library", "LangChain supports FAISS"]
       vector_store = FAISS.from_texts(texts, embedding)
     # Создать ретривер
@@ -243,6 +250,27 @@ def handle_text_message(message):
     # ........
 
     sleep(2)
+
+# `/start` - функция, обрабатывающая команду
+#############################################
+@bot.message_handler(commands=['start'])
+def start(message: types.Message):
+    user_id = message.chat.id
+
+    # Проверка словарей для данного пользователя
+    if user_id not in user_conversations:
+        user_conversations[user_id] = ConversationBufferMemory()
+
+    if user_id not in user_llm_rag:
+        user_llm_rag[user_id] = create_llm_rag(user_id)
+
+    vdb, embedding_retriever, llm, rag_chain, conversation = user_llm_rag[user_id]
+    conversation.memory = user_conversations[user_id]
+
+    bot.send_message(message.chat.id, 'Готов к работе')
+
+
+
 
 ####################################################################################################
 #                                      Запуск бота                                                 #
